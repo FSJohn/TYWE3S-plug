@@ -23,12 +23,12 @@ bool AutoConfig()
         int wstatus = WiFi.status();
         if (wstatus == WL_CONNECTED)
         {
-            Serial.println("WIFI SmartConfig Success");
+            Serial.println("\nWIFI SmartConfig Success");
             Serial.printf("SSID:%s", WiFi.SSID().c_str());
             Serial.printf(", PSW:%s\r\n", WiFi.psk().c_str());
             Serial.print("LocalIP:");
             Serial.print(WiFi.localIP());
-            Serial.print(" ,GateIP:");
+            Serial.print(",GateIP:");
             Serial.println(WiFi.gatewayIP());
             return true;
         }
@@ -83,7 +83,7 @@ void loadConfig()
     }
     EEPROM.commit();
 
-    Serial.println("--Config--");
+    Serial.println("\n--Config Start--");
     Serial.print("SSID:");
     Serial.println(config.stassid);
     Serial.print("PASSWD:");
@@ -92,7 +92,7 @@ void loadConfig()
     Serial.println(config.cuid);
     Serial.print("topic:");
     Serial.println(config.ctopic);
-    Serial.println("--Config--");
+    Serial.println("--Config End--");
 }
 
 
@@ -231,7 +231,7 @@ void initWifi(){
         config_flag = 1;
         apConfig(topic);//加载ap
     }
-    Serial.println("--Config--");
+    Serial.println("\n--Config Start--");
     Serial.print("SSID:");
     Serial.println(config.stassid);
     Serial.print("PASSWD:");
@@ -240,7 +240,7 @@ void initWifi(){
     Serial.println(config.cuid);
     Serial.print("topic:");
     Serial.println(config.ctopic);
-    Serial.println("--Config--");
+    Serial.println("--Config End--");
 }
 
 // Wifi看门狗

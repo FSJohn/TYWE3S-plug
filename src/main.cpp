@@ -2,16 +2,20 @@
 #include "led.h"
 #include "soft_ap.h"
 
-
-String otaUrl = "http://bin.bemfa.com/b/3BcZGRjN2MyMWI5ODE5Y2ViNzMwMGY0NDZhYTUyYzI2MjM=D27ADF001.bin";//固件链接，在巴法云控制台复制、粘贴到这里即可
-
+String UID;
+String TOPIC;
+String otaUrl;
 config_type config;
 
 extern void restoreFactory();
+void getUpdateUrl();
 
 //热更新
 void updateBin(){
-    Serial.println("start update");    
+    Serial.println("start update");  
+    //1. 获取固件连接
+    getUpdateUrl();
+    //2.下载固件并升级
     WiFiClient UpdateClient;
     t_httpUpdate_return ret = ESPhttpUpdate.update(UpdateClient, otaUrl);
     switch(ret) {
@@ -37,6 +41,7 @@ unsigned long preHeartTick = 0;         //心跳
 unsigned long preTCPStartTick = 0;      //连接
 bool preTCPConnected = false;           //TCP预连接?
 
+
 //TCP初始化连接
 void doTCPClientTick();
 void startTCPClient();
@@ -60,14 +65,6 @@ void startTCPClient(){
         Serial.printf("%s:%d\r\n",server_ip,atoi(server_port));
 
         String tcpTemp="";  //初始化字符串
-        String UID = config.cuid;
-        String TOPIC = config.ctopic;
-        Serial.println("----");
-        Serial.print("UID:");
-        Serial.println(UID);
-        Serial.print("topic:");
-        Serial.println(TOPIC);
-        Serial.println("----");
         tcpTemp = "cmd=1&uid="+UID+"&topic="+TOPIC+"\r\n"; //构建订阅指令
         sendtoTCPServer(tcpTemp); //发送订阅指令
         tcpTemp.clear();//清空
@@ -195,7 +192,36 @@ void resetBtn(){
     }
 }
 
-
+// 获取更新连接
+void getUpdateUrl(){
+    WiFiClient TCPclient;
+    HTTPClient http;    //Declare object of class HTTPClient
+    //Post Data
+    String ApiUrl = "http://api.bemfa.com/api/device/v1/bin/";
+    String postData;
+    postData="?uid="+UID+"&topic="+TOPIC+"&type=3";
+    Serial.print("postData:");
+    Serial.println(ApiUrl+postData);
+    http.begin(TCPclient,ApiUrl+postData);              //Specify request destination
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");    //Specify content-type header
+    int httpCode = http.GET();   //Send the request
+    String payload = http.getString();    //Get the response payload
+    Serial.println(httpCode);   //Print HTTP return code
+    Serial.println(payload);    //Print request response payload
+    http.end();  //Close connection
+    Serial.println("GET Success"); 
+    StaticJsonDocument<512> doc;
+    DeserializationError error = deserializeJson(doc, payload);
+    if (error) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.f_str());
+        return;
+    }
+    const char* data=doc["data"]["url"];
+    otaUrl = String(data);
+    Serial.print("otaUrl:");
+    Serial.println(otaUrl);
+}
 
 // 初始化，相当于main 函数
 void setup() {
@@ -218,10 +244,18 @@ void setup() {
 
     // 初始网络连接
     initWifi();
-    
+
     //恢复蓝色灯
     digitalWrite(BLUE_LED_Pin,LOW);     //低电平开灯
-
+    //设置全局变量
+    UID = config.cuid;
+    TOPIC = config.ctopic;
+//     Serial.println("----");
+//     Serial.print("UID:");
+//     Serial.println(UID);
+//     Serial.print("topic:");
+//     Serial.println(TOPIC);
+//     Serial.print("----");
 }
 
 //主循环

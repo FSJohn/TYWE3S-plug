@@ -1,9 +1,13 @@
 #include "main.h"
 #include "led.h"
-#include "connect_wifi.h"
+#include "soft_ap.h"
 
 
-String otaUrl = "http://bin.bemfa.com/b/3BcYTA5YmE2NjhkZDIzNDNkYWE5N2VkMDVlNjFjYWVlYjQ=chazuo001.bin";//固件链接，在巴法云控制台复制、粘贴到这里即可
+String otaUrl = "http://bin.bemfa.com/b/3BcZGRjN2MyMWI5ODE5Y2ViNzMwMGY0NDZhYTUyYzI2MjM=D27ADF001.bin";//固件链接，在巴法云控制台复制、粘贴到这里即可
+
+config_type config;
+
+extern void restoreFactory();
 
 //热更新
 void updateBin(){
@@ -54,8 +58,16 @@ void startTCPClient(){
     if(TCPclient.connect(server_ip, atoi(server_port))){
         Serial.print("\nConnected to server:");
         Serial.printf("%s:%d\r\n",server_ip,atoi(server_port));
-        
+
         String tcpTemp="";  //初始化字符串
+        String UID = config.cuid;
+        String TOPIC = config.ctopic;
+        Serial.println("----");
+        Serial.print("UID:");
+        Serial.println(UID);
+        Serial.print("topic:");
+        Serial.println(TOPIC);
+        Serial.println("----");
         tcpTemp = "cmd=1&uid="+UID+"&topic="+TOPIC+"\r\n"; //构建订阅指令
         sendtoTCPServer(tcpTemp); //发送订阅指令
         tcpTemp.clear();//清空
@@ -157,11 +169,37 @@ void doTCPClientTick(){
     }
 }
 
+//上电长按重置
+void resetBtn(){  
+    if(digitalRead(BUTTON_Pin) == LOW)
+    {
+        delay(10);
+        if(digitalRead(BUTTON_Pin) == LOW)
+        {
+            unsigned long press = millis();
+            while(digitalRead(BUTTON_Pin) == LOW){
+                unsigned long release = millis();
+                unsigned long using_time = release - press;
+                Serial.println(using_time);
+                if(using_time > 500){//强制重置,闪灯后重置
+                    for(int i = 0;i<3;i++){
+                        digitalWrite(RED_LED_Pin,LOW);
+                        delay(250);                     
+                        digitalWrite(RED_LED_Pin,HIGH);
+                        delay(250);
+                    }
+                    restoreFactory();
+                }
+            }    
+        }
+    }
+}
+
 
 
 // 初始化，相当于main 函数
 void setup() {
-    //初始化串口
+    // 初始化串口
     Serial.begin(115200);
 
     //接口初始化
@@ -170,16 +208,24 @@ void setup() {
     pinMode(PLUG_Pin,OUTPUT);
     pinMode(BUTTON_Pin,INPUT);
 
-    //默认上电，开启灯
-    digitalWrite(RED_LED_Pin,LOW);  //低电平开灯
+    //默认上电,开启灯
     digitalWrite(PLUG_Pin,HIGH);        //开启继电器
+    digitalWrite(RED_LED_Pin,LOW);      //低电平开灯
+    digitalWrite(BLUE_LED_Pin,LOW);     //低电平开灯
 
-    //初始网络连接
+    // Reset
+    resetBtn();                         //开机长按重置
+
+    // 初始网络连接
     initWifi();
+    
+    //恢复蓝色灯
+    digitalWrite(BLUE_LED_Pin,LOW);     //低电平开灯
+
 }
 
 //主循环
-void loop() {
+void loop(){
     wifiDog();    // 断线重连
     doTCPClientTick();    //TCP监听
     buttonLed();    //物理按钮

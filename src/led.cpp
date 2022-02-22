@@ -3,12 +3,12 @@
 
 //打开灯泡
 void turnOnLed(){
-  Serial.println("Turn ON");
-  digitalWrite(BLUE_LED_Pin,LOW);
-  //Serial.println("LEd down");
-  digitalWrite(PLUG_Pin,HIGH);
-  //Serial.println("plug down");
-//   doHttpStick(msgOn); //发送打开通知
+    Serial.println("Turn ON");
+    digitalWrite(BLUE_LED_Pin,LOW);
+    //Serial.println("LEd down");
+    digitalWrite(PLUG_Pin,HIGH);
+    //Serial.println("plug down");
+    //doHttpStick(msgOn); //发送打开通知
 }
 
 
